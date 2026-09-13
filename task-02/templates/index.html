@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ project_name }}</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-blue-500 selection:text-white">
+
+    <!-- Top Navigation Bar -->
+    <header class="sticky top-0 z-40 bg-slate-900/80 backdrop-blur-xl border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <!-- Brand Logo -->
+            <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('store')">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-emerald-400 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                    <i class="fa-solid fa-cart-flatbed text-white text-xl"></i>
+                </div>
+                <div>
+                    <span class="text-xl font-bold bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">TechLoom Store</span>
+                    <span class="block text-[10px] uppercase tracking-widest text-blue-400 font-semibold">Checkout & Payment System</span>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <nav class="hidden md:flex items-center gap-2">
+                <button data-tab="store" class="nav-tab px-4 py-2 rounded-xl text-sm font-semibold border border-blue-500 text-blue-400 bg-blue-500/10 flex items-center gap-2 transition-all">
+                    <i class="fa-solid fa-store"></i> Storefront
+                </button>
+                <button data-tab="orders" class="nav-tab px-4 py-2 rounded-xl text-sm font-semibold border border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 flex items-center gap-2 transition-all">
+                    <i class="fa-solid fa-clock-rotate-left"></i> Order History
+                </button>
+                <button data-tab="status" class="nav-tab px-4 py-2 rounded-xl text-sm font-semibold border border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 flex items-center gap-2 transition-all">
+                    <i class="fa-solid fa-shield-halved"></i> System Specs
+                </button>
+            </nav>
+
+            <!-- Action Buttons & Cart -->
+            <div class="flex items-center gap-3">
+                <button id="seed-data-btn" title="Reset/Re-seed Product Inventory" class="px-3 py-1.5 bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg border border-slate-700 transition-colors flex items-center gap-1.5">
+                    <i class="fa-solid fa-rotate text-blue-400"></i> Seed Inventory
+                </button>
+
+                <button id="cart-btn" class="relative px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-medium shadow-lg shadow-blue-500/25 flex items-center gap-2 transition-all">
+                    <i class="fa-solid fa-basket-shopping"></i>
+                    <span class="hidden sm:inline">Cart</span>
+                    <span id="cart-badge" class="hidden px-2 py-0.5 text-xs font-extrabold bg-white text-blue-600 rounded-full shadow">0</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- TAB 1: STOREFRONT & PRODUCTS -->
+        <section id="tab-store" class="tab-content space-y-8">
+            <!-- Hero Banner -->
+            <div class="relative rounded-3xl overflow-hidden glass-panel p-8 sm:p-12 border border-slate-800 bg-gradient-to-r from-slate-900 via-slate-900/90 to-blue-950/40">
+                <div class="relative z-10 max-w-2xl">
+                    <span class="px-3 py-1 text-xs font-bold rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/30 uppercase tracking-wider">
+                        <i class="fa-solid fa-bolt mr-1"></i> Real-time Stock Reservation System
+                    </span>
+                    <h1 class="text-3xl sm:text-4xl font-extrabold text-white mt-3 leading-tight">
+                        Next-Gen E-Commerce with Instant 5-Minute Inventory Lock
+                    </h1>
+                    <p class="text-slate-300 mt-3 text-base">
+                        Explore our catalog, reserve items with a guaranteed 5-minute checkout timer, and test mock payment gateway outcomes (Success, Failure, Timeout) with idempotency protection.
+                    </p>
+                </div>
+                <div class="absolute right-0 bottom-0 top-0 w-1/3 opacity-20 pointer-events-none hidden lg:block bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-500 via-transparent to-transparent"></div>
+            </div>
+
+            <!-- Filters & Search Bar -->
+            <div class="glass-panel p-6 rounded-2xl space-y-4">
+                <div class="flex flex-col md:flex-row gap-4 justify-between items-center">
+                    <!-- Search Input -->
+                    <div class="relative w-full md:w-96">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-slate-400"></i>
+                        <input type="text" id="search-input" placeholder="Search products by name or details..." 
+                            class="w-full pl-10 pr-4 py-2.5 bg-slate-900/80 border border-slate-700/60 rounded-xl text-sm text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 transition-colors">
+                    </div>
+
+                    <!-- Price Slider & Stock Toggle -->
+                    <div class="flex flex-wrap items-center gap-6 w-full md:w-auto justify-between md:justify-end">
+                        <!-- Price Range -->
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Max Price:</span>
+                            <input type="range" id="price-slider" min="10" max="600" step="10" value="600" class="w-32 accent-blue-500 cursor-pointer">
+                            <span id="price-display" class="text-sm font-bold text-emerald-400 w-12">$600</span>
+                        </div>
+
+                        <!-- In-Stock Toggle -->
+                        <label class="flex items-center gap-2 cursor-pointer select-none">
+                            <input type="checkbox" id="instock-toggle" class="sr-only peer">
+                            <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600 relative"></div>
+                            <span class="text-xs font-semibold text-slate-300">In Stock Only</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Category Pills -->
+                <div id="category-pills" class="flex flex-wrap gap-2 pt-2 border-t border-slate-800/80">
+                    <!-- Dynamic rendering -->
+                </div>
+            </div>
+
+            <!-- Product Grid -->
+            <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <!-- Dynamic product cards -->
+            </div>
+        </section>
+
+        <!-- TAB 2: ORDER HISTORY -->
+        <section id="tab-orders" class="tab-content hidden space-y-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 class="text-2xl font-bold text-white">Order History & Lifecycles</h2>
+                    <p class="text-sm text-slate-400">Track active reservations, paid orders, and lifecycle actions (Pay, Cancel, Refund).</p>
+                </div>
+                <button id="refresh-orders-btn" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 flex items-center gap-1.5">
+                    <i class="fa-solid fa-arrows-rotate text-blue-400"></i> Refresh
+                </button>
+            </div>
+
+            <!-- Orders Container -->
+            <div id="orders-list-container" class="space-y-4">
+                <!-- Dynamic rendering -->
+            </div>
+        </section>
+
+        <!-- TAB 3: SYSTEM SPECIFICATIONS -->
+        <section id="tab-status" class="tab-content hidden space-y-6">
+            <div class="glass-panel p-8 rounded-3xl border border-slate-800 max-w-4xl mx-auto">
+                <h2 class="text-2xl font-bold text-white mb-2">Architecture & System Implementation</h2>
+                <p class="text-sm text-slate-400 mb-6">Overview of Section 02 E-Commerce Checkout & Payment System design principles.</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-slate-900/60 p-5 rounded-2xl border border-slate-800">
+                        <div class="flex items-center gap-3 mb-2">
+                            <i class="fa-solid fa-database text-blue-400 text-xl"></i>
+                            <h3 class="text-base font-bold text-white">Async SQLAlchemy & SQLite/Postgres</h3>
+                        </div>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            Built with Python FastAPI and async SQLAlchemy. Stock quantity updates happen atomically (`stock` vs `reserved_stock`) inside database transactions.
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-900/60 p-5 rounded-2xl border border-slate-800">
+                        <div class="flex items-center gap-3 mb-2">
+                            <i class="fa-solid fa-hourglass-half text-amber-400 text-xl"></i>
+                            <h3 class="text-base font-bold text-white">5-Minute Inventory Expiry Worker</h3>
+                        </div>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            Background worker scans unpaid `RESERVED` orders. Orders exceeding 5 minutes are set to `EXPIRED` and reserved items automatically return to available stock.
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-900/60 p-5 rounded-2xl border border-slate-800">
+                        <div class="flex items-center gap-3 mb-2">
+                            <i class="fa-solid fa-key text-emerald-400 text-xl"></i>
+                            <h3 class="text-base font-bold text-white">Payment Idempotency Keys</h3>
+                        </div>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            `POST /api/orders/{id}/pay` mandates `X-Idempotency-Key` or payload key. Duplicate double-click charges return cached transactions without double-billing or double-deducting stock.
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-900/60 p-5 rounded-2xl border border-slate-800">
+                        <div class="flex items-center gap-3 mb-2">
+                            <i class="fa-solid fa-arrows-spin text-purple-400 text-xl"></i>
+                            <h3 class="text-base font-bold text-white">Full Lifecycle & Restocking</h3>
+                        </div>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            Supports cancellation of unpaid reservations and refunds for paid orders. Refunding restores sold inventory straight back into available catalog stock.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- SLIDE-OVER CART DRAWER -->
+    <div id="cart-drawer" class="fixed inset-0 z-50 hidden overflow-hidden">
+        <div class="absolute inset-0 bg-slate-950/70 backdrop-blur-sm transition-opacity" onclick="closeCartDrawer()"></div>
+        <div class="fixed inset-y-0 right-0 max-w-full flex pl-10">
+            <div class="w-screen max-w-md bg-slate-900 border-l border-slate-800 p-6 flex flex-col justify-between shadow-2xl">
+                <div>
+                    <div class="flex justify-between items-center pb-4 border-b border-slate-800">
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-basket-shopping text-blue-400"></i> Shopping Cart
+                        </h2>
+                        <button id="close-cart-btn" class="text-slate-400 hover:text-white p-2 rounded-lg text-lg">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+
+                    <!-- Cart Items Container -->
+                    <div id="cart-items-container" class="space-y-3 mt-4 max-h-[calc(100vh-280px)] overflow-y-auto pr-1">
+                        <!-- Dynamic items -->
+                    </div>
+                </div>
+
+                <!-- Footer Checkout Summary -->
+                <div class="pt-4 border-t border-slate-800 space-y-4 bg-slate-900">
+                    <div class="flex justify-between items-center text-base">
+                        <span class="text-slate-400 font-medium">Estimated Subtotal</span>
+                        <span id="cart-subtotal" class="text-xl font-bold text-emerald-400">$0.00</span>
+                    </div>
+                    <p class="text-xs text-slate-400">Stock will be reserved for 5 minutes once you proceed to checkout.</p>
+                    <button id="proceed-checkout-btn" class="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 disabled:text-slate-600 text-white font-bold rounded-xl shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2">
+                        Proceed to Checkout <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHECKOUT MODAL -->
+    <div id="checkout-modal" class="fixed inset-0 z-50 hidden modal-overlay flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-md"></div>
+        <div class="glass-modal max-w-lg w-full rounded-3xl p-6 sm:p-8 relative z-10 shadow-2xl space-y-6">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-800">
+                <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-receipt text-blue-400"></i> Checkout & Reserve Stock
+                </h3>
+                <button class="modal-close text-slate-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <form onsubmit="submitCheckoutForm(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Customer Name</label>
+                    <input type="text" id="checkout-name" required value="John Doe" class="w-full px-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-blue-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Email Address</label>
+                    <input type="email" id="checkout-email" required value="john.doe@example.com" class="w-full px-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-blue-500">
+                </div>
+
+                <!-- Order Summary Breakdown -->
+                <div class="bg-slate-950/60 p-4 rounded-xl space-y-2 border border-slate-800">
+                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Items Summary</span>
+                    <div id="checkout-summary-items" class="max-h-36 overflow-y-auto">
+                        <!-- Dynamic items -->
+                    </div>
+                    <div class="flex justify-between items-center pt-2 border-t border-slate-800 text-base font-bold">
+                        <span class="text-white">Total Amount</span>
+                        <span id="checkout-total-price" class="text-emerald-400">$0.00</span>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-300 flex items-start gap-2">
+                    <i class="fa-solid fa-triangle-exclamation text-amber-400 mt-0.5"></i>
+                    <span>Submitting checkout creates an order in <strong>RESERVED</strong> status and locks items for <strong>5 minutes</strong>.</span>
+                </div>
+
+                <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/30 transition-all">
+                    Reserve Inventory & Proceed to Payment
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MOCK PAYMENT GATEWAY MODAL -->
+    <div id="payment-modal" class="fixed inset-0 z-50 hidden modal-overlay flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-950/85 backdrop-blur-md"></div>
+        <div class="glass-modal max-w-xl w-full rounded-3xl p-6 sm:p-8 relative z-10 shadow-2xl space-y-6 border-blue-500/30">
+            
+            <div class="flex justify-between items-center pb-3 border-b border-slate-800">
+                <div>
+                    <span class="text-xs font-bold text-blue-400 uppercase tracking-widest block">Simulated Gateway</span>
+                    <h3 class="text-2xl font-extrabold text-white">Payment Simulator</h3>
+                </div>
+                <div class="text-right">
+                    <span class="text-xs text-slate-400 block">Order</span>
+                    <span id="payment-order-number" class="text-sm font-bold text-white">ORD-XXXX</span>
+                </div>
+            </div>
+
+            <!-- Live Expiry Countdown Bar -->
+            <div class="bg-slate-900/90 p-4 rounded-2xl border border-amber-500/30 space-y-2">
+                <div class="flex justify-between items-center text-xs font-bold">
+                    <span class="text-amber-400 flex items-center gap-1.5">
+                        <i class="fa-solid fa-clock animate-pulse"></i> Stock Reservation Expiry Timer:
+                    </span>
+                    <span id="reservation-countdown" class="text-amber-300 text-sm font-mono">05:00</span>
+                </div>
+                <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                    <div id="timer-progress-bar" class="bg-gradient-to-r from-amber-500 to-rose-500 h-full w-full transition-all duration-1000"></div>
+                </div>
+            </div>
+
+            <!-- Payment Details & Idempotency Key -->
+            <div class="space-y-4">
+                <div class="flex justify-between items-center bg-slate-900 p-3.5 rounded-xl border border-slate-800">
+                    <span class="text-sm text-slate-400 font-medium">Total Charge Amount</span>
+                    <span id="payment-amount" class="text-2xl font-extrabold text-emerald-400">$0.00</span>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Payment Method</label>
+                    <select id="payment-method-select" class="w-full px-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white focus:outline-none">
+                        <option value="Credit Card">Credit Card (Visa ****4242)</option>
+                        <option value="MasterCard">MasterCard (****8899)</option>
+                        <option value="Apple Pay">Apple Pay</option>
+                        <option value="PayPal">PayPal Account</option>
+                    </select>
+                </div>
+
+                <!-- Idempotency Key Field -->
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                            Idempotency Key <span class="text-emerald-400 font-normal">(Prevents Duplicate Charges)</span>
+                        </label>
+                        <button id="regen-idem-btn" class="text-xs text-blue-400 hover:text-blue-300 underline">Generate New</button>
+                    </div>
+                    <input type="text" id="idempotency-key-input" class="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-xl font-mono text-xs text-slate-200 focus:outline-none">
+                    <p class="text-[11px] text-slate-400 mt-1">Re-submitting with the same key returns the cached transaction result instantly.</p>
+                </div>
+            </div>
+
+            <!-- Mock Gateway Simulation Actions -->
+            <div class="space-y-2 pt-2 border-t border-slate-800">
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Simulate Gateway Response:</span>
+                
+                <div class="grid grid-cols-3 gap-3">
+                    <button onclick="triggerMockPayment('SUCCESS')" class="py-3 px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/20 flex flex-col items-center gap-1 transition-all">
+                        <i class="fa-solid fa-circle-check text-base"></i>
+                        <span>SUCCESS</span>
+                        <span class="text-[10px] font-normal opacity-80">Locks Sold Stock</span>
+                    </button>
+
+                    <button onclick="triggerMockPayment('FAILED')" class="py-3 px-3 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-rose-600/20 flex flex-col items-center gap-1 transition-all">
+                        <i class="fa-solid fa-circle-xmark text-base"></i>
+                        <span>FAILURE</span>
+                        <span class="text-[10px] font-normal opacity-80">Releases Stock</span>
+                    </button>
+
+                    <button onclick="triggerMockPayment('TIMEOUT')" class="py-3 px-3 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-amber-600/20 flex flex-col items-center gap-1 transition-all">
+                        <i class="fa-solid fa-hourglass text-base"></i>
+                        <span>TIMEOUT</span>
+                        <span class="text-[10px] font-normal opacity-80">Expiring in 5 Min</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ORDER CONFIRMATION MODAL -->
+    <div id="confirm-modal" class="fixed inset-0 z-50 hidden modal-overlay flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-md"></div>
+        <div class="glass-modal max-w-md w-full rounded-3xl p-6 sm:p-8 relative z-10 shadow-2xl text-center space-y-5">
+            
+            <div class="w-16 h-16 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center mx-auto border border-blue-500/30">
+                <i class="fa-solid fa-receipt text-3xl"></i>
+            </div>
+
+            <div>
+                <span id="confirm-cached-badge" class="hidden px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 mb-2 inline-block">
+                    Idempotency Cache Hit
+                </span>
+                <h3 class="text-2xl font-bold text-white">Payment Processed</h3>
+                <p id="confirm-order-number" class="text-sm font-mono text-blue-400 font-semibold mt-1">ORD-XXXX</p>
+            </div>
+
+            <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 text-left space-y-2 text-xs">
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-400">Order Status:</span>
+                    <span id="confirm-status-badge" class="px-2.5 py-0.5 font-bold rounded-full">PAID</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-400">Idempotency Key:</span>
+                    <span id="confirm-idempotency-key" class="font-mono text-slate-300 truncate max-w-[180px]">IDEM-XXX</span>
+                </div>
+                <div class="pt-2 border-t border-slate-800">
+                    <p id="confirm-message" class="text-slate-300 leading-relaxed"></p>
+                </div>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="document.getElementById('confirm-modal').classList.add('hidden'); switchTab('store');" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-sm rounded-xl">
+                    Back to Store
+                </button>
+                <button onclick="document.getElementById('confirm-modal').classList.add('hidden'); switchTab('orders');" class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm rounded-xl shadow-lg shadow-blue-600/30">
+                    View Orders
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PRODUCT DETAIL MODAL -->
+    <div id="product-detail-modal" class="fixed inset-0 z-50 hidden modal-overlay flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-md"></div>
+        <div class="glass-modal max-w-2xl w-full rounded-3xl p-6 sm:p-8 relative z-10 shadow-2xl">
+            <button class="modal-close absolute top-5 right-5 text-slate-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
+                <div class="h-64 rounded-2xl overflow-hidden bg-slate-900">
+                    <img id="detail-img" src="" alt="Product" class="w-full h-full object-cover">
+                </div>
+                <div class="space-y-4">
+                    <span id="detail-category" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-slate-800 text-slate-300 border border-slate-700">Category</span>
+                    <h3 id="detail-title" class="text-xl font-bold text-white">Product Title</h3>
+                    <p id="detail-description" class="text-xs text-slate-400 leading-relaxed">Description</p>
+                    
+                    <div class="flex items-center justify-between pt-2">
+                        <span id="detail-price" class="text-2xl font-extrabold text-emerald-400">$0.00</span>
+                        <div class="flex items-center gap-2">
+                            <label class="text-xs text-slate-400">Qty:</label>
+                            <input type="number" id="detail-qty" min="1" max="10" value="1" class="w-16 px-2 py-1 bg-slate-900 border border-slate-700 rounded-lg text-sm text-center text-white">
+                        </div>
+                    </div>
+
+                    <!-- Inventory Breakdown -->
+                    <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800 text-xs flex justify-around text-center">
+                        <div>
+                            <span class="text-slate-500 block">Available</span>
+                            <span id="detail-available" class="font-bold text-emerald-400 text-sm">0</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 block">Reserved</span>
+                            <span id="detail-reserved" class="font-bold text-amber-400 text-sm">0</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 block">Total</span>
+                            <span id="detail-total" class="font-bold text-slate-300 text-sm">0</span>
+                        </div>
+                    </div>
+
+                    <button id="detail-add-btn" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg shadow-blue-600/30 transition-all">
+                        Add to Cart
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container" class="fixed bottom-6 right-6 z-50 space-y-3 pointer-events-auto"></div>
+
+    <!-- Application Script -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
