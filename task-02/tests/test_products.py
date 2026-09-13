@@ -48,3 +48,21 @@ async def test_get_product_by_id(async_client: AsyncClient):
 async def test_get_product_not_found(async_client: AsyncClient):
     res = await async_client.get("/api/products/999999")
     assert res.status_code == 404
+
+@pytest.mark.asyncio
+async def test_root_endpoint_get_and_head(async_client: AsyncClient):
+    res_get = await async_client.get("/")
+    assert res_get.status_code == 200
+
+    res_head = await async_client.head("/")
+    assert res_head.status_code == 200
+
+@pytest.mark.asyncio
+async def test_health_endpoint_get_and_head(async_client: AsyncClient):
+    res_get = await async_client.get("/health")
+    assert res_get.status_code == 200
+    assert res_get.json()["status"] == "ok"
+
+    res_head = await async_client.head("/health")
+    assert res_head.status_code == 200
+
