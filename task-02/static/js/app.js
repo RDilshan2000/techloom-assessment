@@ -885,6 +885,16 @@ function debounce(func, wait) {
     };
 }
 
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 // ================= ADMIN PANEL FUNCTIONS =================
 
 async function loadAdminInventory() {
@@ -893,10 +903,14 @@ async function loadAdminInventory() {
 
     try {
         const res = await fetch('/api/products');
-        if (!res.ok) throw new Error('Failed to fetch inventory');
-        const products = await res.json();
+        let products = [];
+        if (res.ok) {
+            products = await res.json();
+        } else {
+            console.warn('API returned non-OK status for /api/products');
+        }
 
-        if (products.length === 0) {
+        if (!Array.isArray(products) || products.length === 0) {
             tbody.innerHTML = `
                 <tr>
                     <td colspan="8" class="text-center py-8 text-slate-500">
@@ -924,22 +938,25 @@ async function loadAdminInventory() {
                         ${escapeHtml(p.category)}
                     </span>
                 </td>
-                <td class="py-3 px-4 font-bold text-emerald-400">$${p.price.toFixed(2)}</td>
+                <td class="py-3 px-4 font-bold text-emerald-400">$${(p.price || 0).toFixed(2)}</td>
                 <td class="py-3 px-4 font-semibold ${p.stock > 0 ? 'text-emerald-400' : 'text-rose-400'}">
                     ${p.stock} units
                 </td>
                 <td class="py-3 px-4 text-amber-400 font-medium">
-                    ${p.reserved_stock} reserved
+                    ${p.reserved_stock || 0} reserved
                 </td>
                 <td class="py-3 px-4 font-bold text-slate-200">
-                    ${p.total_stock} total
+                    ${p.total_stock !== undefined ? p.total_stock : ((p.stock || 0) + (p.reserved_stock || 0))} total
                 </td>
                 <td class="py-3 px-4 text-right">
                     <div class="flex items-center gap-2 justify-end">
                         <input type="number" min="1" value="10" id="admin-add-stock-input-${p.id}" 
                             class="w-16 px-2 py-1 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:outline-none focus:border-blue-500">
-                        <button onclick="handleAddStock(${p.id})" class="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg flex items-center gap-1 shadow-sm transition-all">
-                            <i class="fa-solid fa-plus"></i> Add Qty
+                        <button onclick="handleAddStock(${p.id})" class="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg flex items-center gap-1 shadow-sm transition-all" title="Add Stock Quantity">
+                            <i class="fa-solid fa-plus"></i> Add
+                        </button>
+                        <button onclick="handleDeleteProduct(${p.id}, '${escapeHtml(p.name)}')" class="px-2.5 py-1 bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all" title="Delete Product">
+                            <i class="fa-solid fa-trash"></i>
                         </button>
                     </div>
                 </td>
@@ -948,6 +965,25 @@ async function loadAdminInventory() {
     } catch (err) {
         console.error(err);
         showToast('Error', 'Failed to load admin inventory', 'error');
+    }
+}
+
+async function handleDeleteProduct(productId, productName) {
+    if (!confirm(`Are you sure you want to delete product "${productName}" (#${productId})?`)) return;
+
+    try {
+        const res = await fetch(`/api/products/${productId}`, { method: 'DELETE' });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.detail || 'Failed to delete product');
+        }
+
+        showToast('Product Deleted', `Product "${productName}" has been deleted.`, 'info');
+        await loadProducts();
+        await loadAdminInventory();
+    } catch (err) {
+        console.error(err);
+        showToast('Error', err.message || 'Failed to delete product', 'error');
     }
 }
 

@@ -231,3 +231,14 @@ async def add_stock(
     await db.refresh(prod)
     return prod
 
+async def delete_product(
+    db: AsyncSession,
+    product_id: int
+) -> bool:
+    prod = await get_product(db, product_id)
+    if not prod:
+        return False
+    await db.delete(prod)
+    await db.commit()
+    return True
+

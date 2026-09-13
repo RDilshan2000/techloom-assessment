@@ -94,4 +94,22 @@ async def test_add_stock_admin(async_client: AsyncClient):
     data = res.json()
     assert data["stock"] == original_stock + 15
 
+@pytest.mark.asyncio
+async def test_delete_product_admin(async_client: AsyncClient):
+    payload = {
+        "name": "Temporary Item",
+        "description": "Item to be deleted",
+        "category": "Electronics",
+        "price": 10.0,
+        "stock": 5
+    }
+    create_res = await async_client.post("/api/products", json=payload)
+    prod_id = create_res.json()["id"]
+
+    del_res = await async_client.delete(f"/api/products/{prod_id}")
+    assert del_res.status_code == 204
+
+    get_res = await async_client.get(f"/api/products/{prod_id}")
+    assert get_res.status_code == 404
+
 

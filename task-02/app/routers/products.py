@@ -91,6 +91,19 @@ async def add_product_stock(
         )
     return product
 
+@router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_product(
+    product_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    success = await product_service.delete_product(db, product_id)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Product with ID {product_id} not found."
+        )
+    return None
+
 @router.post("/seed", response_model=SeedResponse)
 async def seed_products(
     db: AsyncSession = Depends(get_db)
