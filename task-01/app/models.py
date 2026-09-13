@@ -8,7 +8,7 @@ def utc_now():
     return datetime.now(timezone.utc)
 
 class Product(Base):
-    __tablename__ = "products"
+    __tablename__ = "task01_products"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
@@ -21,7 +21,7 @@ class Product(Base):
     order_items: Mapped[List["OrderItem"]] = relationship("OrderItem", back_populates="product")
 
 class Order(Base):
-    __tablename__ = "orders"
+    __tablename__ = "task01_orders"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True, autoincrement=True)
     status: Mapped[str] = mapped_column(String(50), nullable=False, default="RESERVED", index=True)
@@ -34,11 +34,11 @@ class Order(Base):
     payments: Mapped[List["PaymentRecord"]] = relationship("PaymentRecord", back_populates="order", cascade="all, delete-orphan", lazy="selectin")
 
 class OrderItem(Base):
-    __tablename__ = "order_items"
+    __tablename__ = "task01_order_items"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True, autoincrement=True)
-    order_id: Mapped[int] = mapped_column(Integer, ForeignKey("orders.id", ondelete="CASCADE"), nullable=False)
-    product_id: Mapped[int] = mapped_column(Integer, ForeignKey("products.id"), nullable=False)
+    order_id: Mapped[int] = mapped_column(Integer, ForeignKey("task01_orders.id", ondelete="CASCADE"), nullable=False)
+    product_id: Mapped[int] = mapped_column(Integer, ForeignKey("task01_products.id"), nullable=False)
     quantity: Mapped[int] = mapped_column(Integer, nullable=False)
     unit_price: Mapped[float] = mapped_column(Float, nullable=False)
 
@@ -46,10 +46,10 @@ class OrderItem(Base):
     product: Mapped["Product"] = relationship("Product", back_populates="order_items", lazy="selectin")
 
 class PaymentRecord(Base):
-    __tablename__ = "payment_records"
+    __tablename__ = "task01_payment_records"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True, autoincrement=True)
-    order_id: Mapped[int] = mapped_column(Integer, ForeignKey("orders.id", ondelete="CASCADE"), nullable=False)
+    order_id: Mapped[int] = mapped_column(Integer, ForeignKey("task01_orders.id", ondelete="CASCADE"), nullable=False)
     idempotency_key: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     status: Mapped[str] = mapped_column(String(50), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
