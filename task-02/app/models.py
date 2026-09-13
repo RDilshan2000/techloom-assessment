@@ -22,7 +22,7 @@ class PaymentStatus(str, enum.Enum):
     TIMEOUT = "TIMEOUT"
 
 class Product(Base):
-    __tablename__ = "products"
+    __tablename__ = "task02_products"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
@@ -40,7 +40,7 @@ class Product(Base):
         return self.stock + self.reserved_stock
 
 class Order(Base):
-    __tablename__ = "orders"
+    __tablename__ = "task02_orders"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     order_number: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
@@ -61,11 +61,11 @@ class Order(Base):
     payment_transactions: Mapped[List["PaymentTransaction"]] = relationship("PaymentTransaction", back_populates="order", cascade="all, delete-orphan", lazy="selectin")
 
 class OrderItem(Base):
-    __tablename__ = "order_items"
+    __tablename__ = "task02_order_items"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    order_id: Mapped[int] = mapped_column(Integer, ForeignKey("orders.id", ondelete="CASCADE"), nullable=False)
-    product_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("products.id", ondelete="SET NULL"), nullable=True)
+    order_id: Mapped[int] = mapped_column(Integer, ForeignKey("task02_orders.id", ondelete="CASCADE"), nullable=False)
+    product_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("task02_products.id", ondelete="SET NULL"), nullable=True)
     product_name: Mapped[str] = mapped_column(String(255), nullable=False)
     unit_price: Mapped[float] = mapped_column(Float, nullable=False)
     quantity: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -75,10 +75,10 @@ class OrderItem(Base):
     product: Mapped[Optional["Product"]] = relationship("Product", lazy="selectin")
 
 class PaymentTransaction(Base):
-    __tablename__ = "payment_transactions"
+    __tablename__ = "task02_payment_transactions"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    order_id: Mapped[int] = mapped_column(Integer, ForeignKey("orders.id", ondelete="CASCADE"), nullable=False)
+    order_id: Mapped[int] = mapped_column(Integer, ForeignKey("task02_orders.id", ondelete="CASCADE"), nullable=False)
     idempotency_key: Mapped[str] = mapped_column(String(128), unique=True, index=True, nullable=False)
     status: Mapped[PaymentStatus] = mapped_column(Enum(PaymentStatus), nullable=False)
     payment_method: Mapped[str] = mapped_column(String(100), nullable=False, default="Credit Card")
