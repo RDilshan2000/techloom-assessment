@@ -7,9 +7,9 @@
 
 ## 📌 Submission Links
 
-- **GitHub Repository:** `[INSERT_YOUR_GITHUB_REPO_URL_HERE]`
-- **Task 01 Live URL (Concurrently-Safe Inventory Management):** `[INSERT_TASK_01_LIVE_URL_HERE]`
-- **Task 02 Live URL (E-Commerce Checkout & Payment Gateway System):** `[INSERT_TASK_02_LIVE_URL_HERE]`
+- 📁 **GitHub Repository:** [https://github.com/RDilshan2000/techloom-assessment](https://github.com/RDilshan2000/techloom-assessment)
+- 🏬 **Task 01 Live URL (POS & Inventory Management System):** [https://techloom-pos-task01.onrender.com/](https://techloom-pos-task01.onrender.com/)
+- 🛒 **Task 02 Live URL (E-Commerce Storefront & Payment System):** [https://techloom-ecommerce-task02.onrender.com/](https://techloom-ecommerce-task02.onrender.com/)
 
 ---
 
