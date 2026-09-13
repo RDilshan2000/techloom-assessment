@@ -2,7 +2,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
-from app.schemas import ProductRead, SeedResponse
+from app.schemas import ProductRead, ProductCreate, ProductUpdate, AddStockRequest, SeedResponse
 from app.services import product_service
 
 router = APIRouter(prefix="/api/products", tags=["Products"])
@@ -26,12 +26,64 @@ async def list_products(
     )
     return products
 
+@router.post("", response_model=ProductRead, status_code=status.HTTP_201_CREATED)
+async def create_product(
+    data: ProductCreate,
+    db: AsyncSession = Depends(get_db)
+):
+    return await product_service.create_product(
+        db,
+        name=data.name,
+        category=data.category,
+        price=data.price,
+        stock=data.stock,
+        description=data.description,
+        image_url=data.image_url
+    )
+
 @router.get("/{product_id}", response_model=ProductRead)
 async def get_product(
     product_id: int,
     db: AsyncSession = Depends(get_db)
 ):
     product = await product_service.get_product(db, product_id)
+    if not product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Product with ID {product_id} not found."
+        )
+    return product
+
+@router.put("/{product_id}", response_model=ProductRead)
+async def update_product(
+    product_id: int,
+    data: ProductUpdate,
+    db: AsyncSession = Depends(get_db)
+):
+    product = await product_service.update_product(
+        db,
+        product_id,
+        name=data.name,
+        category=data.category,
+        price=data.price,
+        stock=data.stock,
+        description=data.description,
+        image_url=data.image_url
+    )
+    if not product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Product with ID {product_id} not found."
+        )
+    return product
+
+@router.post("/{product_id}/stock", response_model=ProductRead)
+async def add_product_stock(
+    product_id: int,
+    data: AddStockRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    product = await product_service.add_stock(db, product_id, data.quantity)
     if not product:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

@@ -8,16 +8,22 @@ from app import crud
 router = APIRouter()
 
 def build_order_response(order) -> OrderResponse:
-    items = [
-        OrderItemResponse(
-            id=item.id,
-            product_id=item.product_id,
-            product_name=item.product.name if item.product else f"Product #{item.product_id}",
-            quantity=item.quantity,
-            unit_price=item.unit_price
+    if not order:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to retrieve order details.")
+    items = []
+    for item in (order.items or []):
+        prod_name = f"Product #{item.product_id}"
+        if "product" in item.__dict__ and item.__dict__["product"] is not None:
+            prod_name = item.__dict__["product"].name
+        items.append(
+            OrderItemResponse(
+                id=item.id,
+                product_id=item.product_id,
+                product_name=prod_name,
+                quantity=item.quantity,
+                unit_price=item.unit_price
+            )
         )
-        for item in order.items
-    ]
     return OrderResponse(
         id=order.id,
         status=order.status,

@@ -14,6 +14,17 @@ class ProductBase(BaseModel):
 class ProductCreate(ProductBase):
     pass
 
+class ProductUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    description: Optional[str] = Field(None, max_length=2000)
+    category: Optional[str] = Field(None, min_length=1, max_length=100)
+    price: Optional[float] = Field(None, gt=0)
+    stock: Optional[int] = Field(None, ge=0)
+    image_url: Optional[str] = Field(None, max_length=500)
+
+class AddStockRequest(BaseModel):
+    quantity: int = Field(..., gt=0, description="Quantity of stock to add")
+
 class ProductRead(ProductBase):
     id: int
     reserved_stock: int

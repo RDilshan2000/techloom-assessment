@@ -22,18 +22,19 @@ async def create_product(db: AsyncSession, product_in: ProductCreate) -> Product
     return product
 
 async def get_product(db: AsyncSession, product_id: int) -> Optional[Product]:
-    stmt = select(Product).where(Product.id == product_id).execution_options(populate_existing=True)
-    result = await db.execute(stmt)
+    db.expire_all()
+    stmt = select(Product).where(Product.id == product_id)
+    result = await db.execute(stmt, execution_options={"populate_existing": True})
     return result.scalar_one_or_none()
 
 async def list_products(db: AsyncSession, skip: int = 0, limit: int = 100) -> List[Product]:
-    stmt = select(Product).execution_options(populate_existing=True).offset(skip).limit(limit)
-    result = await db.execute(stmt)
+    stmt = select(Product).offset(skip).limit(limit)
+    result = await db.execute(stmt, execution_options={"populate_existing": True})
     return list(result.scalars().all())
 
 async def update_product(db: AsyncSession, product_id: int, product_in: ProductUpdate) -> Optional[Product]:
     stmt = select(Product).where(Product.id == product_id).with_for_update()
-    result = await db.execute(stmt)
+    result = await db.execute(stmt, execution_options={"populate_existing": True})
     product = result.scalar_one_or_none()
     if not product:
         return None
@@ -48,7 +49,7 @@ async def update_product(db: AsyncSession, product_id: int, product_in: ProductU
 
 async def delete_product(db: AsyncSession, product_id: int) -> bool:
     stmt = select(Product).where(Product.id == product_id).with_for_update()
-    result = await db.execute(stmt)
+    result = await db.execute(stmt, execution_options={"populate_existing": True})
     product = result.scalar_one_or_none()
     if not product:
         return False
@@ -80,30 +81,19 @@ async def create_order_with_reservation(db: AsyncSession, order_in: OrderCreate)
                 detail=f"Product ID {item_in.product_id} not found."
             )
 
-        # Atomic conditional stock deduction to guarantee concurrency safety under high parallel load
-        update_stmt = (
-            update(Product)
-            .where(Product.id == item_in.product_id, Product.stock_quantity >= item_in.quantity)
-            .values(
-                stock_quantity=Product.stock_quantity - item_in.quantity,
-                reserved_quantity=Product.reserved_quantity + item_in.quantity
-            )
-        )
-        update_res = await db.execute(update_stmt)
-
-        if update_res.rowcount == 0:
+        if product.stock_quantity < item_in.quantity:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Insufficient stock for '{product.name}'. Available: {product.stock_quantity}, requested: {item_in.quantity}."
+                detail=f"Insufficient stock for '{product.name}'."
             )
 
-        await db.refresh(product)
+        product.stock_quantity -= item_in.quantity
+        product.reserved_quantity += item_in.quantity
 
         item_total = round(product.price * item_in.quantity, 2)
         total_amount += item_total
 
         order_items.append(OrderItem(
-            product=product,
             product_id=product.id,
             quantity=item_in.quantity,
             unit_price=product.price
@@ -117,7 +107,6 @@ async def create_order_with_reservation(db: AsyncSession, order_in: OrderCreate)
     )
     db.add(order)
     await db.commit()
-    await db.refresh(order)
     return order
 
 async def get_order(db: AsyncSession, order_id: int) -> Optional[Order]:
@@ -174,8 +163,7 @@ async def cancel_order(db: AsyncSession, order_id: int) -> Order:
             product.reserved_quantity = max(0, product.reserved_quantity - item.quantity)
 
     await db.commit()
-    await db.refresh(order)
-    return order
+    return await get_order(db, order.id)
 
 
 def ensure_utc(dt: datetime) -> datetime:

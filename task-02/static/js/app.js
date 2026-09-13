@@ -93,6 +93,13 @@ function setupEventListeners() {
     const refreshOrdersBtn = document.getElementById('refresh-orders-btn');
     if (refreshOrdersBtn) refreshOrdersBtn.addEventListener('click', loadOrders);
 
+    // Admin Panel Listeners
+    const adminForm = document.getElementById('admin-create-product-form');
+    if (adminForm) adminForm.addEventListener('submit', handleCreateProduct);
+
+    const adminRefreshBtn = document.getElementById('admin-refresh-inventory-btn');
+    if (adminRefreshBtn) adminRefreshBtn.addEventListener('click', loadAdminInventory);
+
     // Regenerate Idempotency Key
     const regenIdemBtn = document.getElementById('regen-idem-btn');
     if (regenIdemBtn) {
@@ -126,6 +133,8 @@ function switchTab(tabName) {
 
     if (tabName === 'orders') {
         loadOrders();
+    } else if (tabName === 'admin') {
+        loadAdminInventory();
     }
 }
 
@@ -874,4 +883,151 @@ function debounce(func, wait) {
         clearTimeout(timeout);
         timeout = setTimeout(later, wait);
     };
+}
+
+// ================= ADMIN PANEL FUNCTIONS =================
+
+async function loadAdminInventory() {
+    const tbody = document.getElementById('admin-inventory-tbody');
+    if (!tbody) return;
+
+    try {
+        const res = await fetch('/api/products');
+        if (!res.ok) throw new Error('Failed to fetch inventory');
+        const products = await res.json();
+
+        if (products.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center py-8 text-slate-500">
+                        No products found in inventory. Add a product above or click "Seed Inventory".
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = products.map(p => `
+            <tr class="hover:bg-slate-900/40 transition-colors">
+                <td class="py-3 px-4 font-mono text-xs text-slate-400">#${p.id}</td>
+                <td class="py-3 px-4">
+                    <div class="flex items-center gap-3">
+                        <img src="${escapeHtml(p.image_url)}" alt="${escapeHtml(p.name)}" class="w-8 h-8 rounded-lg object-cover bg-slate-800" onerror="this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&q=80'">
+                        <div>
+                            <span class="font-semibold text-white block">${escapeHtml(p.name)}</span>
+                            <span class="text-[11px] text-slate-400 block truncate max-w-xs">${escapeHtml(p.description || '')}</span>
+                        </div>
+                    </div>
+                </td>
+                <td class="py-3 px-4">
+                    <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                        ${escapeHtml(p.category)}
+                    </span>
+                </td>
+                <td class="py-3 px-4 font-bold text-emerald-400">$${p.price.toFixed(2)}</td>
+                <td class="py-3 px-4 font-semibold ${p.stock > 0 ? 'text-emerald-400' : 'text-rose-400'}">
+                    ${p.stock} units
+                </td>
+                <td class="py-3 px-4 text-amber-400 font-medium">
+                    ${p.reserved_stock} reserved
+                </td>
+                <td class="py-3 px-4 font-bold text-slate-200">
+                    ${p.total_stock} total
+                </td>
+                <td class="py-3 px-4 text-right">
+                    <div class="flex items-center gap-2 justify-end">
+                        <input type="number" min="1" value="10" id="admin-add-stock-input-${p.id}" 
+                            class="w-16 px-2 py-1 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:outline-none focus:border-blue-500">
+                        <button onclick="handleAddStock(${p.id})" class="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg flex items-center gap-1 shadow-sm transition-all">
+                            <i class="fa-solid fa-plus"></i> Add Qty
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    } catch (err) {
+        console.error(err);
+        showToast('Error', 'Failed to load admin inventory', 'error');
+    }
+}
+
+async function handleCreateProduct(e) {
+    e.preventDefault();
+    const btn = document.getElementById('admin-submit-btn');
+    if (btn) btn.disabled = true;
+
+    try {
+        const name = document.getElementById('admin-prod-name').value.trim();
+        const category = document.getElementById('admin-prod-category').value.trim();
+        const price = parseFloat(document.getElementById('admin-prod-price').value);
+        const stock = parseInt(document.getElementById('admin-prod-stock').value, 10);
+        const image_url = document.getElementById('admin-prod-image').value.trim();
+        const description = document.getElementById('admin-prod-desc').value.trim();
+
+        if (!name || !category || isNaN(price) || isNaN(stock)) {
+            showToast('Validation Error', 'Please fill in all required fields correctly.', 'warning');
+            if (btn) btn.disabled = false;
+            return;
+        }
+
+        const res = await fetch('/api/products', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, category, price, stock, image_url, description })
+        });
+
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.detail || 'Failed to create product');
+        }
+
+        const newProd = await res.json();
+        showToast('Product Created', `Successfully added "${newProd.name}" to inventory!`, 'success');
+
+        // Reset form
+        document.getElementById('admin-create-product-form').reset();
+
+        // Refresh products & admin view
+        await loadProducts();
+        await loadAdminInventory();
+    } catch (err) {
+        console.error(err);
+        showToast('Error', err.message || 'Failed to create product', 'error');
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+
+async function handleAddStock(productId) {
+    const input = document.getElementById(`admin-add-stock-input-${productId}`);
+    if (!input) return;
+
+    const quantity = parseInt(input.value, 10);
+    if (isNaN(quantity) || quantity <= 0) {
+        showToast('Invalid Quantity', 'Please enter a valid stock quantity (> 0).', 'warning');
+        return;
+    }
+
+    try {
+        const res = await fetch(`/api/products/${productId}/stock`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ quantity })
+        });
+
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.detail || 'Failed to add stock');
+        }
+
+        const updatedProd = await res.json();
+        showToast('Stock Updated', `Added +${quantity} units to "${updatedProd.name}". New stock: ${updatedProd.stock}`, 'success');
+
+        // Refresh product list and admin inventory
+        await loadProducts();
+        await loadAdminInventory();
+    } catch (err) {
+        console.error(err);
+        showToast('Error', err.message || 'Failed to update stock', 'error');
+    }
 }

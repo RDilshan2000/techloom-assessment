@@ -162,3 +162,72 @@ async def seed_sample_products(db: AsyncSession) -> int:
     
     await db.commit()
     return len(SAMPLE_PRODUCTS)
+
+async def create_product(
+    db: AsyncSession,
+    name: str,
+    category: str,
+    price: float,
+    stock: int,
+    description: str = "",
+    image_url: str = ""
+) -> Product:
+    prod = Product(
+        name=name,
+        description=description,
+        category=category,
+        price=price,
+        stock=stock,
+        reserved_stock=0,
+        image_url=image_url or "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&q=80"
+    )
+    db.add(prod)
+    await db.commit()
+    await db.refresh(prod)
+    return prod
+
+async def update_product(
+    db: AsyncSession,
+    product_id: int,
+    name: Optional[str] = None,
+    category: Optional[str] = None,
+    price: Optional[float] = None,
+    stock: Optional[int] = None,
+    description: Optional[str] = None,
+    image_url: Optional[str] = None
+) -> Optional[Product]:
+    prod = await get_product(db, product_id)
+    if not prod:
+        return None
+    
+    if name is not None:
+        prod.name = name
+    if category is not None:
+        prod.category = category
+    if price is not None:
+        prod.price = price
+    if stock is not None:
+        prod.stock = stock
+    if description is not None:
+        prod.description = description
+    if image_url is not None:
+        prod.image_url = image_url
+
+    await db.commit()
+    await db.refresh(prod)
+    return prod
+
+async def add_stock(
+    db: AsyncSession,
+    product_id: int,
+    quantity: int
+) -> Optional[Product]:
+    prod = await get_product(db, product_id)
+    if not prod:
+        return None
+    
+    prod.stock += quantity
+    await db.commit()
+    await db.refresh(prod)
+    return prod
+
