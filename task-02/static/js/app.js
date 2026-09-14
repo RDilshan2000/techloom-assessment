@@ -112,29 +112,71 @@ function setupEventListeners() {
     }
 }
 
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 function switchTab(tabName) {
+    if (!tabName) return;
     state.activeTab = tabName;
-    document.querySelectorAll('.nav-tab').forEach(t => {
-        if (t.dataset.tab === tabName) {
-            t.classList.add('border-blue-500', 'text-blue-400', 'bg-blue-500/10');
-            t.classList.remove('border-transparent', 'text-slate-400');
-        } else {
-            t.classList.remove('border-blue-500', 'text-blue-400', 'bg-blue-500/10');
-            t.classList.add('border-transparent', 'text-slate-400');
+
+    // Update active nav button styles defensively
+    const navTabs = document.querySelectorAll('.nav-tab');
+    if (navTabs) {
+        navTabs.forEach(t => {
+            if (!t) return;
+            const target = t.dataset ? t.dataset.tab : null;
+            if (target === tabName || target === `tab-${tabName}` || target === tabName.replace(/^tab-/, '')) {
+                t.classList.add('border-blue-500', 'text-blue-400', 'bg-blue-500/10');
+                t.classList.remove('border-transparent', 'text-slate-400');
+            } else {
+                t.classList.remove('border-blue-500', 'text-blue-400', 'bg-blue-500/10');
+                t.classList.add('border-transparent', 'text-slate-400');
+            }
+        });
+    }
+
+    // Hide all tab content sections defensively
+    const tabContents = document.querySelectorAll('.tab-content');
+    if (tabContents) {
+        tabContents.forEach(content => {
+            if (content && content.classList) {
+                content.classList.add('hidden');
+            }
+        });
+    }
+
+    // Find target view container defensively (supports tab-X, X-view, or X)
+    const targetContent = document.getElementById(`tab-${tabName}`) 
+                       || document.getElementById(`${tabName}-view`) 
+                       || document.getElementById(tabName);
+    
+    if (targetContent && targetContent.classList) {
+        targetContent.classList.remove('hidden');
+
+        // Defensive check: If targetContent is inside a hidden parent container, make sure parent is unhidden as well
+        let parent = targetContent.parentElement;
+        while (parent && parent !== document.body) {
+            if (parent.classList && parent.classList.contains('hidden') && parent.classList.contains('tab-content')) {
+                parent.classList.remove('hidden');
+            }
+            parent = parent.parentElement;
         }
-    });
+    } else {
+        console.warn(`Tab view element for '${tabName}' not found in DOM.`);
+    }
 
-    document.querySelectorAll('.tab-content').forEach(content => {
-        content.classList.add('hidden');
-    });
-
-    const targetContent = document.getElementById(`tab-${tabName}`);
-    if (targetContent) targetContent.classList.remove('hidden');
-
-    if (tabName === 'orders') {
-        loadOrders();
-    } else if (tabName === 'admin') {
-        loadAdminInventory();
+    const cleanTab = tabName.replace(/^tab-/, '').replace(/-view$/, '');
+    if (cleanTab === 'orders') {
+        if (typeof loadOrders === 'function') loadOrders();
+    } else if (cleanTab === 'admin') {
+        if (typeof loadAdminInventory === 'function') loadAdminInventory();
     }
 }
 
