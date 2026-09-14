@@ -126,13 +126,21 @@ function switchTab(tabName) {
     if (!tabName) return;
     state.activeTab = tabName;
 
-    // Update active nav button styles defensively
+    const cleanTab = tabName.toLowerCase().replace(/^tab-/, '').replace(/-view$/, '');
+
+    // 1. Update active nav button styles defensively
     const navTabs = document.querySelectorAll('.nav-tab');
     if (navTabs) {
         navTabs.forEach(t => {
             if (!t) return;
-            const target = t.dataset ? t.dataset.tab : null;
-            if (target === tabName || target === `tab-${tabName}` || target === tabName.replace(/^tab-/, '')) {
+            const target = t.dataset ? (t.dataset.tab || '').toLowerCase().replace(/^tab-/, '').replace(/-view$/, '') : '';
+            const isMatch = (target === cleanTab) || 
+                            (cleanTab === 'store' && (target === 'storefront' || target === 'store')) ||
+                            (cleanTab === 'storefront' && (target === 'storefront' || target === 'store')) ||
+                            (cleanTab === 'orders' && (target === 'order-history' || target === 'orders')) ||
+                            (cleanTab === 'order-history' && (target === 'order-history' || target === 'orders'));
+
+            if (isMatch) {
                 t.classList.add('border-blue-500', 'text-blue-400', 'bg-blue-500/10');
                 t.classList.remove('border-transparent', 'text-slate-400');
             } else {
@@ -142,26 +150,41 @@ function switchTab(tabName) {
         });
     }
 
-    // Hide all tab content sections defensively
-    const tabContents = document.querySelectorAll('.tab-content');
-    if (tabContents) {
-        tabContents.forEach(content => {
-            if (content && content.classList) {
-                content.classList.add('hidden');
-            }
-        });
+    // 2. Hide all view containers
+    const viewsToHide = [
+        '#storefront-view', '#tab-store',
+        '#order-history-view', '#tab-orders',
+        '#admin-view', '#tab-admin',
+        '#status-view', '#tab-status',
+        '.tab-content'
+    ];
+    document.querySelectorAll(viewsToHide.join(', ')).forEach(view => {
+        if (view && view.classList) {
+            view.classList.add('hidden');
+        }
+    });
+
+    // 3. Unhide target view container
+    let targetView = null;
+    if (cleanTab === 'store' || cleanTab === 'storefront') {
+        targetView = document.getElementById('storefront-view') || document.getElementById('tab-store');
+    } else if (cleanTab === 'orders' || cleanTab === 'order-history') {
+        targetView = document.getElementById('order-history-view') || document.getElementById('tab-orders');
+    } else if (cleanTab === 'admin') {
+        targetView = document.getElementById('admin-view') || document.getElementById('tab-admin');
+    } else if (cleanTab === 'status') {
+        targetView = document.getElementById('status-view') || document.getElementById('tab-status');
     }
 
-    // Find target view container defensively (supports tab-X, X-view, or X)
-    const targetContent = document.getElementById(`tab-${tabName}`) 
-                       || document.getElementById(`${tabName}-view`) 
-                       || document.getElementById(tabName);
-    
-    if (targetContent && targetContent.classList) {
-        targetContent.classList.remove('hidden');
+    if (!targetView) {
+        targetView = document.getElementById(tabName) || document.getElementById(`tab-${cleanTab}`) || document.getElementById(`${cleanTab}-view`);
+    }
 
-        // Defensive check: If targetContent is inside a hidden parent container, make sure parent is unhidden as well
-        let parent = targetContent.parentElement;
+    if (targetView && targetView.classList) {
+        targetView.classList.remove('hidden');
+
+        // Unhide any parent container if nested
+        let parent = targetView.parentElement;
         while (parent && parent !== document.body) {
             if (parent.classList && parent.classList.contains('hidden') && parent.classList.contains('tab-content')) {
                 parent.classList.remove('hidden');
@@ -169,14 +192,15 @@ function switchTab(tabName) {
             parent = parent.parentElement;
         }
     } else {
-        console.warn(`Tab view element for '${tabName}' not found in DOM.`);
+        console.warn(`View container for tab '${tabName}' not found in DOM.`);
     }
 
-    const cleanTab = tabName.replace(/^tab-/, '').replace(/-view$/, '');
-    if (cleanTab === 'orders') {
+    // 4. Trigger data loading
+    if (cleanTab === 'orders' || cleanTab === 'order-history') {
         if (typeof loadOrders === 'function') loadOrders();
     } else if (cleanTab === 'admin') {
-        if (typeof loadAdminInventory === 'function') loadAdminInventory();
+        if (typeof loadAdminProducts === 'function') loadAdminProducts();
+        else if (typeof loadAdminInventory === 'function') loadAdminInventory();
     }
 }
 
@@ -939,18 +963,28 @@ function escapeHtml(str) {
 
 // ================= ADMIN PANEL FUNCTIONS =================
 
-async function loadAdminInventory() {
-    const tbody = document.getElementById('admin-inventory-tbody');
+// ================= ADMIN PANEL FUNCTIONS =================
+
+async function loadAdminProducts() {
+    const tbody = document.getElementById('admin-inventory-tbody') || document.getElementById('admin-products-tbody');
+    const alertBox = document.getElementById('admin-error-alert');
+    const alertMsg = document.getElementById('admin-error-alert-msg');
+
+    if (alertBox) {
+        alertBox.classList.add('hidden');
+        if (alertMsg) alertMsg.textContent = '';
+    }
+
     if (!tbody) return;
 
     try {
         const res = await fetch('/api/products');
-        let products = [];
-        if (res.ok) {
-            products = await res.json();
-        } else {
-            console.warn('API returned non-OK status for /api/products');
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.detail || `Server returned HTTP ${res.status}`);
         }
+
+        const products = await res.json();
 
         if (!Array.isArray(products) || products.length === 0) {
             tbody.innerHTML = `
@@ -968,21 +1002,21 @@ async function loadAdminInventory() {
                 <td class="py-3 px-4 font-mono text-xs text-slate-400">#${p.id}</td>
                 <td class="py-3 px-4">
                     <div class="flex items-center gap-3">
-                        <img src="${escapeHtml(p.image_url)}" alt="${escapeHtml(p.name)}" class="w-8 h-8 rounded-lg object-cover bg-slate-800" onerror="this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&q=80'">
+                        <img src="${escapeHtml(p.image_url || '')}" alt="${escapeHtml(p.name || '')}" class="w-8 h-8 rounded-lg object-cover bg-slate-800" onerror="this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&q=80'">
                         <div>
-                            <span class="font-semibold text-white block">${escapeHtml(p.name)}</span>
+                            <span class="font-semibold text-white block">${escapeHtml(p.name || '')}</span>
                             <span class="text-[11px] text-slate-400 block truncate max-w-xs">${escapeHtml(p.description || '')}</span>
                         </div>
                     </div>
                 </td>
                 <td class="py-3 px-4">
                     <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-slate-800 text-slate-300 border border-slate-700">
-                        ${escapeHtml(p.category)}
+                        ${escapeHtml(p.category || 'General')}
                     </span>
                 </td>
-                <td class="py-3 px-4 font-bold text-emerald-400">$${(p.price || 0).toFixed(2)}</td>
-                <td class="py-3 px-4 font-semibold ${p.stock > 0 ? 'text-emerald-400' : 'text-rose-400'}">
-                    ${p.stock} units
+                <td class="py-3 px-4 font-bold text-emerald-400">$${(parseFloat(p.price) || 0).toFixed(2)}</td>
+                <td class="py-3 px-4 font-semibold ${(p.stock || 0) > 0 ? 'text-emerald-400' : 'text-rose-400'}">
+                    ${p.stock || 0} units
                 </td>
                 <td class="py-3 px-4 text-amber-400 font-medium">
                     ${p.reserved_stock || 0} reserved
@@ -997,17 +1031,35 @@ async function loadAdminInventory() {
                         <button onclick="handleAddStock(${p.id})" class="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg flex items-center gap-1 shadow-sm transition-all" title="Add Stock Quantity">
                             <i class="fa-solid fa-plus"></i> Add
                         </button>
-                        <button onclick="handleDeleteProduct(${p.id}, '${escapeHtml(p.name)}')" class="px-2.5 py-1 bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all" title="Delete Product">
-                            <i class="fa-solid fa-trash"></i>
+                        <button onclick="handleDeleteProduct(${p.id}, '${escapeHtml(p.name || '')}')" class="px-2.5 py-1 bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all" title="Delete Product">
+                            <i class="fa-solid fa-trash"></i> Delete
                         </button>
                     </div>
                 </td>
             </tr>
         `).join('');
     } catch (err) {
-        console.error(err);
+        console.error('Error loading admin products:', err);
+        if (alertBox) {
+            if (alertMsg) alertMsg.textContent = `Failed to load products: ${err.message}`;
+            else alertBox.textContent = `Failed to load products: ${err.message}`;
+            alertBox.classList.remove('hidden');
+        }
+        if (tbody) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center py-6 text-rose-400 font-medium">
+                        <i class="fa-solid fa-triangle-exclamation mr-2"></i>Failed to load product inventory: ${escapeHtml(err.message)}
+                    </td>
+                </tr>
+            `;
+        }
         showToast('Error', 'Failed to load admin inventory', 'error');
     }
+}
+
+async function loadAdminInventory() {
+    return await loadAdminProducts();
 }
 
 async function handleDeleteProduct(productId, productName) {
@@ -1022,7 +1074,7 @@ async function handleDeleteProduct(productId, productName) {
 
         showToast('Product Deleted', `Product "${productName}" has been deleted.`, 'info');
         await loadProducts();
-        await loadAdminInventory();
+        await loadAdminProducts();
     } catch (err) {
         console.error(err);
         showToast('Error', err.message || 'Failed to delete product', 'error');
@@ -1030,17 +1082,24 @@ async function handleDeleteProduct(productId, productName) {
 }
 
 async function handleCreateProduct(e) {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     const btn = document.getElementById('admin-submit-btn');
     if (btn) btn.disabled = true;
 
     try {
-        const name = document.getElementById('admin-prod-name').value.trim();
-        const category = document.getElementById('admin-prod-category').value.trim();
-        const price = parseFloat(document.getElementById('admin-prod-price').value);
-        const stock = parseInt(document.getElementById('admin-prod-stock').value, 10);
-        const image_url = document.getElementById('admin-prod-image').value.trim();
-        const description = document.getElementById('admin-prod-desc').value.trim();
+        const nameElem = document.getElementById('admin-prod-name') || document.getElementById('product-name');
+        const catElem = document.getElementById('admin-prod-category') || document.getElementById('product-category');
+        const priceElem = document.getElementById('admin-prod-price') || document.getElementById('product-price');
+        const stockElem = document.getElementById('admin-prod-stock') || document.getElementById('product-stock');
+        const imgElem = document.getElementById('admin-prod-image') || document.getElementById('product-image');
+        const descElem = document.getElementById('admin-prod-desc') || document.getElementById('product-description');
+
+        const name = nameElem ? nameElem.value.trim() : '';
+        const category = catElem ? catElem.value.trim() : '';
+        const price = priceElem ? parseFloat(priceElem.value) : NaN;
+        const stock = stockElem ? parseInt(stockElem.value, 10) : NaN;
+        const image_url = imgElem ? imgElem.value.trim() : '';
+        const description = descElem ? descElem.value.trim() : '';
 
         if (!name || !category || isNaN(price) || isNaN(stock)) {
             showToast('Validation Error', 'Please fill in all required fields correctly.', 'warning');
@@ -1063,11 +1122,12 @@ async function handleCreateProduct(e) {
         showToast('Product Created', `Successfully added "${newProd.name}" to inventory!`, 'success');
 
         // Reset form
-        document.getElementById('admin-create-product-form').reset();
+        const form = document.getElementById('admin-create-product-form');
+        if (form) form.reset();
 
         // Refresh products & admin view
         await loadProducts();
-        await loadAdminInventory();
+        await loadAdminProducts();
     } catch (err) {
         console.error(err);
         showToast('Error', err.message || 'Failed to create product', 'error');
