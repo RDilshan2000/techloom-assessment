@@ -36,7 +36,7 @@ function setupEventListeners() {
         tab.addEventListener('click', (e) => {
             e.preventDefault();
             const target = tab.dataset.tab;
-            switchTab(target);
+            switchView(target);
         });
     });
 
@@ -122,23 +122,42 @@ function escapeHtml(str) {
         .replace(/'/g, '&#039;');
 }
 
-function switchTab(tabName) {
-    if (!tabName) return;
-    state.activeTab = tabName;
+function switchView(targetViewId) {
+    if (!targetViewId) return;
 
-    const cleanTab = tabName.toLowerCase().replace(/^tab-/, '').replace(/-view$/, '');
+    // Normalize shorthand names to full view container IDs
+    let normalizedId = targetViewId;
+    if (targetViewId === 'store' || targetViewId === 'storefront' || targetViewId === 'tab-store') normalizedId = 'storefront-view';
+    else if (targetViewId === 'orders' || targetViewId === 'order-history' || targetViewId === 'tab-orders') normalizedId = 'order-history-view';
+    else if (targetViewId === 'admin' || targetViewId === 'tab-admin') normalizedId = 'admin-view';
+    else if (targetViewId === 'status' || targetViewId === 'system-specs' || targetViewId === 'tab-status' || targetViewId === 'status-view') normalizedId = 'system-specs-view';
 
-    // 1. Update active nav button styles defensively
+    state.activeTab = normalizedId;
+
+    // 1. Toggle hidden class on all 4 main view containers
+    const views = ['storefront-view', 'order-history-view', 'admin-view', 'system-specs-view'];
+    views.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (id === normalizedId || id === targetViewId) {
+                el.classList.remove('hidden');
+            } else {
+                el.classList.add('hidden');
+            }
+        }
+    });
+
+    // 2. Highlight active nav tab button
     const navTabs = document.querySelectorAll('.nav-tab');
     if (navTabs) {
         navTabs.forEach(t => {
             if (!t) return;
-            const target = t.dataset ? (t.dataset.tab || '').toLowerCase().replace(/^tab-/, '').replace(/-view$/, '') : '';
-            const isMatch = (target === cleanTab) || 
-                            (cleanTab === 'store' && (target === 'storefront' || target === 'store')) ||
-                            (cleanTab === 'storefront' && (target === 'storefront' || target === 'store')) ||
-                            (cleanTab === 'orders' && (target === 'order-history' || target === 'orders')) ||
-                            (cleanTab === 'order-history' && (target === 'order-history' || target === 'orders'));
+            const tabData = t.dataset ? t.dataset.tab : '';
+            const isMatch = (tabData === normalizedId) || (tabData === targetViewId) ||
+                            (normalizedId === 'storefront-view' && (tabData === 'store' || tabData === 'storefront')) ||
+                            (normalizedId === 'order-history-view' && (tabData === 'orders' || tabData === 'order-history')) ||
+                            (normalizedId === 'admin-view' && (tabData === 'admin' || tabData === 'admin-view')) ||
+                            (normalizedId === 'system-specs-view' && (tabData === 'status' || tabData === 'system-specs' || tabData === 'status-view'));
 
             if (isMatch) {
                 t.classList.add('border-blue-500', 'text-blue-400', 'bg-blue-500/10');
@@ -150,58 +169,25 @@ function switchTab(tabName) {
         });
     }
 
-    // 2. Hide all view containers
-    const viewsToHide = [
-        '#storefront-view', '#tab-store',
-        '#order-history-view', '#tab-orders',
-        '#admin-view', '#tab-admin',
-        '#status-view', '#tab-status',
-        '.tab-content'
-    ];
-    document.querySelectorAll(viewsToHide.join(', ')).forEach(view => {
-        if (view && view.classList) {
-            view.classList.add('hidden');
+    // 3. Trigger data loading & rendering per view
+    if (normalizedId === 'storefront-view') {
+        if (typeof renderProducts === 'function') {
+            renderProducts();
         }
-    });
-
-    // 3. Unhide target view container
-    let targetView = null;
-    if (cleanTab === 'store' || cleanTab === 'storefront') {
-        targetView = document.getElementById('storefront-view') || document.getElementById('tab-store');
-    } else if (cleanTab === 'orders' || cleanTab === 'order-history') {
-        targetView = document.getElementById('order-history-view') || document.getElementById('tab-orders');
-    } else if (cleanTab === 'admin') {
-        targetView = document.getElementById('admin-view') || document.getElementById('tab-admin');
-    } else if (cleanTab === 'status') {
-        targetView = document.getElementById('status-view') || document.getElementById('tab-status');
-    }
-
-    if (!targetView) {
-        targetView = document.getElementById(tabName) || document.getElementById(`tab-${cleanTab}`) || document.getElementById(`${cleanTab}-view`);
-    }
-
-    if (targetView && targetView.classList) {
-        targetView.classList.remove('hidden');
-
-        // Unhide any parent container if nested
-        let parent = targetView.parentElement;
-        while (parent && parent !== document.body) {
-            if (parent.classList && parent.classList.contains('hidden') && parent.classList.contains('tab-content')) {
-                parent.classList.remove('hidden');
-            }
-            parent = parent.parentElement;
+        if (typeof loadProducts === 'function' && (!state.products || state.products.length === 0)) {
+            loadProducts();
         }
-    } else {
-        console.warn(`View container for tab '${tabName}' not found in DOM.`);
-    }
-
-    // 4. Trigger data loading
-    if (cleanTab === 'orders' || cleanTab === 'order-history') {
+    } else if (normalizedId === 'order-history-view') {
         if (typeof loadOrders === 'function') loadOrders();
-    } else if (cleanTab === 'admin') {
+    } else if (normalizedId === 'admin-view') {
         if (typeof loadAdminProducts === 'function') loadAdminProducts();
         else if (typeof loadAdminInventory === 'function') loadAdminInventory();
     }
+}
+
+// Backwards compatibility alias
+function switchTab(tabName) {
+    switchView(tabName);
 }
 
 // ================= API CALLS =================
