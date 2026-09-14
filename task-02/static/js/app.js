@@ -122,72 +122,52 @@ function escapeHtml(str) {
         .replace(/'/g, '&#039;');
 }
 
-function switchView(targetViewId) {
-    if (!targetViewId) return;
-
-    // Normalize shorthand names to full view container IDs
-    let normalizedId = targetViewId;
-    if (targetViewId === 'store' || targetViewId === 'storefront' || targetViewId === 'tab-store') normalizedId = 'storefront-view';
-    else if (targetViewId === 'orders' || targetViewId === 'order-history' || targetViewId === 'tab-orders') normalizedId = 'order-history-view';
-    else if (targetViewId === 'admin' || targetViewId === 'tab-admin') normalizedId = 'admin-view';
-    else if (targetViewId === 'status' || targetViewId === 'system-specs' || targetViewId === 'tab-status' || targetViewId === 'status-view') normalizedId = 'system-specs-view';
-
-    state.activeTab = normalizedId;
-
-    // 1. Toggle hidden class on all 4 main view containers
-    const views = ['storefront-view', 'order-history-view', 'admin-view', 'system-specs-view'];
-    views.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            if (id === normalizedId || id === targetViewId) {
-                el.classList.remove('hidden');
-            } else {
-                el.classList.add('hidden');
-            }
-        }
-    });
-
-    // 2. Highlight active nav tab button
-    const navTabs = document.querySelectorAll('.nav-tab');
-    if (navTabs) {
-        navTabs.forEach(t => {
-            if (!t) return;
-            const tabData = t.dataset ? t.dataset.tab : '';
-            const isMatch = (tabData === normalizedId) || (tabData === targetViewId) ||
-                            (normalizedId === 'storefront-view' && (tabData === 'store' || tabData === 'storefront')) ||
-                            (normalizedId === 'order-history-view' && (tabData === 'orders' || tabData === 'order-history')) ||
-                            (normalizedId === 'admin-view' && (tabData === 'admin' || tabData === 'admin-view')) ||
-                            (normalizedId === 'system-specs-view' && (tabData === 'status' || tabData === 'system-specs' || tabData === 'status-view'));
-
-            if (isMatch) {
-                t.classList.add('border-blue-500', 'text-blue-400', 'bg-blue-500/10');
-                t.classList.remove('border-transparent', 'text-slate-400');
-            } else {
-                t.classList.remove('border-blue-500', 'text-blue-400', 'bg-blue-500/10');
-                t.classList.add('border-transparent', 'text-slate-400');
-            }
-        });
+function navigateTo(viewName) {
+  const views = {
+    'storefront': document.getElementById('view-storefront'),
+    'orders': document.getElementById('view-orders'),
+    'admin': document.getElementById('view-admin'),
+    'specs': document.getElementById('view-specs')
+  };
+  
+  Object.keys(views).forEach(key => {
+    if (views[key]) {
+      if (key === viewName) {
+        views[key].classList.remove('hidden');
+      } else {
+        views[key].classList.add('hidden');
+      }
     }
+  });
 
-    // 3. Trigger data loading & rendering per view
-    if (normalizedId === 'storefront-view') {
-        if (typeof renderProducts === 'function') {
-            renderProducts();
-        }
-        if (typeof loadProducts === 'function' && (!state.products || state.products.length === 0)) {
-            loadProducts();
-        }
-    } else if (normalizedId === 'order-history-view') {
-        if (typeof loadOrders === 'function') loadOrders();
-    } else if (normalizedId === 'admin-view') {
-        if (typeof loadAdminProducts === 'function') loadAdminProducts();
-        else if (typeof loadAdminInventory === 'function') loadAdminInventory();
+  // Highlight active nav tab button
+  document.querySelectorAll('.nav-tab').forEach(t => {
+    if (!t) return;
+    const tabData = t.dataset ? t.dataset.tab : '';
+    if (tabData === viewName) {
+      t.classList.add('border-blue-500', 'text-blue-400', 'bg-blue-500/10');
+      t.classList.remove('border-transparent', 'text-slate-400');
+    } else {
+      t.classList.remove('border-blue-500', 'text-blue-400', 'bg-blue-500/10');
+      t.classList.add('border-transparent', 'text-slate-400');
     }
+  });
+
+  if (viewName === 'storefront') loadProducts();
+  if (viewName === 'orders') loadOrders();
+  if (viewName === 'admin') loadAdminProducts();
 }
 
-// Backwards compatibility alias
-function switchTab(tabName) {
-    switchView(tabName);
+function switchView(viewName) {
+  if (viewName === 'store' || viewName === 'storefront' || viewName === 'storefront-view') navigateTo('storefront');
+  else if (viewName === 'orders' || viewName === 'order-history' || viewName === 'order-history-view') navigateTo('orders');
+  else if (viewName === 'admin' || viewName === 'admin-view') navigateTo('admin');
+  else if (viewName === 'specs' || viewName === 'status' || viewName === 'system-specs' || viewName === 'system-specs-view') navigateTo('specs');
+  else navigateTo(viewName);
+}
+
+function switchTab(viewName) {
+  switchView(viewName);
 }
 
 // ================= API CALLS =================
