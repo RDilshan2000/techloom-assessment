@@ -1,16 +1,15 @@
-# TechLoom Assessment - Production-Grade FastAPI POS & E-Commerce Systems
+# Production-Grade FastAPI POS & E-Commerce Systems
 
-**Candidate Name:** Ramesh Dilshan Dissanayaka  
-**Role:** Software Engineer Intern Assessment  
+**Candidate Name:** Ramesh Dilshan Dissanayaka    
 **Repository Name:** `techloom-assessment`
 
 ---
 
-## 📌 Submission & Live Deployment Links
+## 📌 Live Deployment Links
 
 | Service / Resource | Access & Deployment Links |
 | :--- | :--- |
-| 👨‍💻 **Candidate Name** | **Ramesh Dilshan Dissanayaka** (Software Engineer Intern Assessment) |
+| 👨‍💻 **Candidate Name** | **Ramesh Dilshan Dissanayaka**  |
 | 📁 **GitHub Repository** | [https://github.com/RDilshan2000/techloom-assessment](https://github.com/RDilshan2000/techloom-assessment) |
 | 🏬 **Task 01 Live URL (POS System)** | [https://techloom-pos-task01.onrender.com/](https://techloom-pos-task01.onrender.com/) |
 | 🛒 **Task 02 Live URL (E-Commerce Storefront & Admin)** | [https://techloom-ecommerce-task02.onrender.com/](https://techloom-ecommerce-task02.onrender.com/) |
@@ -201,7 +200,6 @@ python -m pytest task-02/tests -v
 ## 👨‍💻 Candidate Information
 
 - **Name:** Ramesh Dilshan Dissanayaka
-- **Role:** Software Engineer Intern Assessment
 - **GitHub Repository:** [https://github.com/RDilshan2000/techloom-assessment](https://github.com/RDilshan2000/techloom-assessment)
 - **Task 01 Live URL (POS System):** [https://techloom-pos-task01.onrender.com/](https://techloom-pos-task01.onrender.com/)
 - **Task 02 Live URL (E-Commerce Storefront & Admin):** [https://techloom-ecommerce-task02.onrender.com/](https://techloom-ecommerce-task02.onrender.com/)
