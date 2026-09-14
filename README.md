@@ -1,39 +1,36 @@
 # TechLoom Assessment - Production-Grade FastAPI POS & E-Commerce Systems
 
-**Candidate Role:** Software Engineer Intern - Practical Assessment  
+**Candidate Name:** Ramesh Dilshan Dissanayaka  
+**Role:** Software Engineer Intern Assessment  
 **Repository Name:** `techloom-assessment`
 
 ---
 
-## 📌 Submission Links
+## 📌 Submission & Live Deployment Links
 
-| Service / Resource | Deployment & Access Links |
+| Service / Resource | Access & Deployment Links |
 | :--- | :--- |
+| 👨‍💻 **Candidate Name** | **Ramesh Dilshan Dissanayaka** (Software Engineer Intern Assessment) |
 | 📁 **GitHub Repository** | [https://github.com/RDilshan2000/techloom-assessment](https://github.com/RDilshan2000/techloom-assessment) |
 | 🏬 **Task 01 Live URL (POS System)** | [https://techloom-pos-task01.onrender.com/](https://techloom-pos-task01.onrender.com/) |
-| 🛒 **Task 02 Live URL (E-Commerce Storefront)** | [https://techloom-ecommerce-task02.onrender.com/](https://techloom-ecommerce-task02.onrender.com/) |
+| 🛒 **Task 02 Live URL (E-Commerce Storefront & Admin)** | [https://techloom-ecommerce-task02.onrender.com/](https://techloom-ecommerce-task02.onrender.com/) |
 
 ---
 
-## 🚀 Recent Key Highlights & Architectural Refinements
+## 🚀 Key Feature Highlights
 
-Recent engineering updates and improvements across both projects include:
+### 🏬 Task 01: High-Concurrency POS & Inventory System
+- **High-Concurrency Transaction Handling**: Designed for point-of-sale operations with simultaneous multi-terminal order placements and payment authorizations.
+- **Database-Level Pessimistic Row Locking (`SELECT ... FOR UPDATE`)**: Enforces explicit row locks during order creation and stock reservations inside ACID database transactions, guaranteeing **0 overselling** even under heavy concurrent traffic.
+- **Automated Concurrency Stress Test Verification**: Includes dedicated unit and stress tests (`task-01/tests/test_concurrency.py`) simulating 20 parallel simultaneous order requests against a single inventory item to empirically prove lock safety.
+- **Stock Hold & Expiration**: 5-minute automated inventory reservation TTL backed by an async background worker scanning every 10 seconds to auto-expire unpaid reservations and restore stock.
+- **Payment Idempotency & Audit Trails**: Mandates `X-Idempotency-Key` headers to prevent double-billing and maintains automated restock audit log records.
 
-### 1. Task 01: POS & High-Concurrency Inventory System
-- **Database-Level Pessimistic Row Locking (`SELECT FOR UPDATE`)**: Enforced explicit row locking during order creation and stock reservations inside ACID transactions to guarantee zero overselling under heavy concurrent loads.
-- **PostgreSQL & SQLite Dual Compatibility**: Configured normalized connection pooling with table isolation (`task01_` vs `task02_` table prefixes) enabling seamless operation on cloud PostgreSQL (Aiven Cloud) and SQLite in-memory development environments.
-- **Idempotent Payment Processing**: Single-transaction idempotency validation using `X-Idempotency-Key` headers to eliminate duplicate billing and double stock deductions.
-- **Automated Background Restocking**: Integrated background scheduler scanning low-stock items and appending audit trail records automatically.
-
-### 2. Task 02: E-Commerce Storefront, Admin Panel & Gateway
-- **Interactive Admin Management Panel**: Designed and integrated a dedicated Admin UI tab in the storefront interface to allow store administrators to create new products, adjust prices, edit categories, and quickly add stock quantities (`+ Add Qty`).
-- **Admin REST API Endpoints**:
-  - `POST /api/products`: Create new products with metadata & initial stock.
-  - `PUT /api/products/{id}`: Edit existing product attributes.
-  - `POST /api/products/{id}/stock`: Replenish product stock directly.
-- **5-Minute Reservation TTL & Expiry Cleanup**: 300-second live countdown timer during checkout paired with an async background worker running every 10 seconds to auto-cancel expired reservations and restore reserved inventory.
-- **Order Lifecycle & Refund System**: Complete customer post-purchase order history interface featuring order cancellation for unpaid holds and simulated instant refunds with catalog stock restoration for paid orders.
-- **Comprehensive Pytest Suite**: 100% test coverage across catalog search, filtering, admin product creation, stock replenishment, payment idempotency, and background cleanup.
+### 🛒 Task 02: E-Commerce Storefront & Product Admin System
+- **Customer Storefront**: Interactive responsive UI featuring seeded product catalog, multi-keyword live search, category pills, price range slider, in-stock filter toggle, slide-over cart drawer, and live 5-minute checkout countdown timer.
+- **Dedicated Product & Inventory Admin Panel**: Full-featured admin interface (`#admin-view`) allowing store managers to publish new products (Name, Description, Price, Stock, Category, Image URL) and manage existing inventory with dynamic direct stock replenishment (`+ Add Qty`).
+- **Mock Payment Gateway with Idempotency**: Interactive gateway supporting `SUCCESS`, `FAILURE`, and `TIMEOUT` simulation modes with automatic `X-Idempotency-Key` deduplication and instant catalog stock release on payment failure.
+- **Automated 19 Passing Test Cases**: 100% passing test suite across `test_cleanup.py`, `test_orders.py`, `test_payments.py`, and `test_products.py`.
 
 ---
 
@@ -42,70 +39,66 @@ Recent engineering updates and improvements across both projects include:
 ```
 techloom-assessment/
 ├── README.md                      # Comprehensive root documentation (this file)
-├── task-01/                       # Task 01: POS & Inventory System
+├── task-01/                       # Task 01: High-Concurrency POS System
 │   ├── app/
-│   │   ├── config.py              # App settings & environment loader
-│   │   ├── database.py            # Async SQLAlchemy engine & PostgreSQL/SQLite setup
+│   │   ├── config.py              # Environment configuration loader
+│   │   ├── database.py            # Async SQLAlchemy engine & connection pool
 │   │   ├── models.py              # Product, Order, OrderItem, Transaction & Restock models
-│   │   ├── schemas.py             # Pydantic validation schemas
-│   │   ├── crud.py                # CRUD operations with SELECT FOR UPDATE locks
-│   │   ├── background.py          # Automated restock background worker
-│   │   ├── main.py                # FastAPI app entrypoint & static mount
-│   │   └── routers/               # API routes (products, orders, payments, audit)
-│   ├── static/                    # POS Admin Dashboard UI (HTML, CSS, Vanilla JS)
-│   ├── tests/                     # Concurrency, lock & payment pytest suite
-│   │   ├── test_concurrency.py    # Parallel 20-request race condition test
-│   │   ├── test_orders.py         # Order lifecycle tests
+│   │   ├── schemas.py             # Pydantic v2 validation schemas
+│   │   ├── crud.py                # CRUD operations with SELECT FOR UPDATE pessimistic locking
+│   │   ├── background.py          # Automated background restock & expiry worker
+│   │   ├── main.py                # FastAPI app entrypoint
+│   │   └── routers/               # Products, Orders, Payments & Audit API routes
+│   ├── static/                    # POS Dashboard UI (HTML, CSS, JS)
+│   ├── tests/                     # Concurrency, locking & payment pytest suite
+│   │   ├── test_concurrency.py    # 20-parallel-request race condition test suite
+│   │   ├── test_orders.py         # Order reservation & expiration tests
 │   │   ├── test_payments.py       # Payment idempotency tests
-│   │   └── test_products.py       # Stock management & metrics tests
-│   ├── requirements.txt           # Task 01 dependencies
+│   │   └── test_products.py       # Stock metrics & inventory tests
+│   ├── requirements.txt           # Task 01 Python dependencies
 │   └── README.md                  # Task 01 specific documentation
 └── task-02/                       # Task 02: E-Commerce Storefront & Admin System
     ├── app/
     │   ├── config.py              # Configuration & TTL settings
-    │   ├── database.py            # Async database connection setup
+    │   ├── database.py            # Async SQLAlchemy engine setup
     │   ├── models.py              # Product, Order, OrderItem & Payment models
-    │   ├── schemas.py             # Pydantic schemas (ProductUpdate, AddStockRequest)
-    │   ├── background.py          # 5-minute reservation cleanup worker
-    │   ├── main.py                # FastAPI entrypoint
-    │   ├── services/              # Product, Order & Payment business logic
+    │   ├── schemas.py             # Pydantic validation schemas
+    │   ├── background.py          # 5-minute stock reservation cleanup worker
+    │   ├── main.py                # FastAPI app entrypoint & static mount
+    │   ├── services/              # Product, Order & Payment domain business logic
     │   └── routers/               # Products, Orders & Payments API endpoints
-    ├── static/                    # Storefront & Admin CSS & JS application logic
-    ├── templates/                 # Jinja2 storefront & admin UI template (index.html)
-    ├── tests/                     # Admin operations, checkout, gateway & cleanup tests
+    ├── static/                    # Storefront & Admin CSS and JS application logic (app.js)
+    ├── templates/                 # Storefront & Admin HTML view layout (index.html)
+    ├── tests/                     # 19 passing test cases (Admin, Checkout, Gateway, Expiry)
     │   ├── test_cleanup.py        # Expiration worker unit tests
-    │   ├── test_orders.py         # Stock reservation & cancellation tests
-    │   ├── test_payments.py       # Payment gateway & refund tests
-    │   └── test_products.py       # Catalog search, filter & admin tests
-    ├── requirements.txt           # Task 02 dependencies
+    │   ├── test_orders.py         # Reservation & cancellation tests
+    │   ├── test_payments.py       # Gateway simulation & refund tests
+    │   └── test_products.py       # Catalog search, filter & admin API tests
+    ├── requirements.txt           # Task 02 Python dependencies
     └── README.md                  # Task 02 specific documentation
 ```
 
 ---
 
-## 🏬 Task 01: POS Order & Inventory System
+## 🏬 Detailed Technical Architecture: Task 01 (POS System)
 
 ### 1. Concurrency & Race Condition Prevention
-- **Pessimistic Row Locking (`SELECT FOR UPDATE`)**: When an order request is received, the system executes:
+- **Pessimistic Row Locking (`SELECT FOR UPDATE`)**: During order creation, product rows are locked at the database level:
   ```python
   stmt = select(Product).where(Product.id == product_id).with_for_update()
   ```
-  This locks the requested product row at the database level for the duration of the ACID transaction, blocking concurrent transactions from reading or mutating the row until committed.
-- **Zero Overselling Guarantee**: Available stock is decremented and reserved stock is incremented inside the lock boundary. If requested quantity exceeds available stock, a `400 Bad Request` is returned without changing inventory state.
+  This locks the targeted inventory rows until the ACID transaction commits or rolls back, completely blocking concurrent transactions from over-committing inventory.
+- **Zero Overselling Guarantee**: Stock validation and atomic decrement occur strictly inside the lock boundary. If requested stock exceeds available units, a `400 Bad Request` exception is thrown without mutating state.
 
 ### 2. Stock Reservation TTL & Background Cleanup
-- **5-Minute Reservation**: Created orders receive status `RESERVED` with `reservation_expires_at = NOW() + 5 MINUTES`.
-- **Background Cleanup Task**: An async worker scans for expired `RESERVED` orders every 10 seconds:
+- **5-Minute Reservation**: Orders are created in `RESERVED` status with `reservation_expires_at = NOW() + 5 MINUTES`.
+- **Background Cleanup Task**: An async worker scans for expired reservations every 10 seconds:
   ```python
   stmt = select(Order).where(Order.status == "RESERVED", Order.reservation_expires_at <= now)
   ```
-  Expired orders are updated to `EXPIRED` and reserved items are safely returned to available stock.
+  Expired orders transition to `EXPIRED` and reserved quantities are automatically restored to available stock.
 
-### 3. Mock Payment Handling & Idempotency
-- **Payment States**: Supports `SUCCESS`, `FAILURE`, and `TIMEOUT` simulation modes.
-- **Idempotency Deduplication**: Validates `X-Idempotency-Key` headers against `PaymentRecord` entities to return cached transaction results on repeated clicks or retries.
-
-### 4. Automated Concurrency Test Verification
+### 3. Automated Concurrency Test Verification
 Run the concurrency stress test suite simulating 20 parallel order requests against 20 units of stock:
 ```bash
 python -m pytest task-01/tests/test_concurrency.py -v
@@ -113,38 +106,27 @@ python -m pytest task-01/tests/test_concurrency.py -v
 
 ---
 
-## 🛒 Task 02: E-Commerce Storefront & Payment System
+## 🛒 Detailed Technical Architecture: Task 02 (E-Commerce Storefront & Admin)
 
 ### 1. Storefront UX & Product Discovery
-- **Real-Time Multi-Attribute Search**: Instant client-side and server-side filtering by product name and description.
-- **Category & Price Filtering**: Interactive category selection pills (Electronics, Apparel, Books, Home) paired with dynamic price range sliders and an "In-Stock Only" toggle.
-- **Stock Indicators**: Real-time visual badges showing exact stock availability and low-stock alerts.
+- **Live Search & Multi-Attribute Filter**: Dynamic filtering by keyword, category selection pills, max price range slider, and an "In-Stock Only" toggle.
+- **Stock Badges**: Visual indicators displaying live available stock, low-stock warnings, and out-of-stock badges.
 
-### 2. Cart, Checkout & Admin Inventory Management
-- **Cart Management**: Add items, adjust quantities, view real-time subtotal calculations, and open checkout drawer.
-- **5-Minute Inventory Hold**: Upon checkout, stock moves to `reserved_stock` and a 5-minute countdown timer displays on screen.
-- **Admin Section Tab**:
-  - **Create New Product**: Form to publish new items with category, price, stock, and image URL.
-  - **Inventory Management Table**: Live view of stock allocations with one-click **`+ Add Qty`** modal to replenish stock without re-entering product data.
+### 2. Dedicated Product & Inventory Admin Panel
+- **Add New Product Form**: Publish items directly to catalog with Name, Description, Price, Stock, Category, and optional Image URL.
+- **Inventory Management Table**: Live tabular overview of all products displaying ID, Name, Category, Price, Available Stock, Reserved Stock, Total Stock, and direct `+ Add Qty` replenishment inputs.
 
-### 3. Payment Gateway Simulation & Idempotency Protection
-- **Interactive Gateway Modal**: Select payment mode (`SUCCESS`, `FAILURE`, `TIMEOUT`) with automatic `X-Idempotency-Key` generation.
-- **Double-Submission Prevention**: Disables action buttons during flight and verifies idempotency keys to prevent duplicate billing.
+### 3. Payment Gateway Simulation & Idempotency
+- **Mock Payment Modes**: Interactive simulation supporting `SUCCESS` (locks sold stock), `FAILED` (releases reserved stock back to catalog), and `TIMEOUT` (keeps reservation active until 5-minute expiry).
+- **Idempotency Protection**: Enforces unique `X-Idempotency-Key` tokens to return cached responses on repeated payments without duplicate charges.
 
-### 4. Customer Post-Purchase Flow
-- **Order History View**: Displays current and historical orders with live status tags (`RESERVED`, `PAID`, `FAILED`, `CANCELLED`, `EXPIRED`).
-- **Order Cancellation**: Unpaid `RESERVED` orders can be cancelled immediately, returning stock to the catalog.
-- **Simulated Refunds**: Customers can request refunds for `PAID` orders, updating order status to `REFUNDED` and returning items to available stock.
+### 4. Post-Purchase Lifecycle & Refunds
+- **Order History View**: Track active reservations, paid orders, cancelled reservations, and refunded orders.
+- **Order Refund Flow**: Customers can request refunds on `PAID` orders, transitioning status to `REFUNDED` and returning items to catalog stock.
 
 ---
 
-## ⚙️ Local Setup & Testing Instructions
-
-### Prerequisites
-- Python 3.10+ installed on your machine.
-- Git.
-
----
+## ⚙️ Local Setup & Running Instructions
 
 ### Step 1: Clone Repository
 ```bash
@@ -154,71 +136,49 @@ cd techloom-assessment
 
 ---
 
-### Step 2: Running Task 01 (POS & Inventory System)
+### Step 2: Run Task 01 (POS System)
+```bash
+cd task-01
+python -m venv venv
+# On Windows:
+.\venv\Scripts\activate
+# On macOS/Linux:
+source venv/bin/activate
 
-1. Open terminal and navigate to `task-01`:
-   ```bash
-   cd task-01
-   ```
-2. Create and activate virtual environment:
-   ```bash
-   python -m venv venv
-   # On Windows:
-   .\venv\Scripts\activate
-   # On macOS/Linux:
-   source venv/bin/activate
-   ```
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-4. Launch Uvicorn dev server:
-   ```bash
-   uvicorn app.main:app --app-dir . --reload --port 8000
-   ```
-5. Open browser:
-   - **Dashboard UI:** `http://127.0.0.1:8000`
-   - **Swagger OpenAPI Docs:** `http://127.0.0.1:8000/docs`
+pip install -r requirements.txt
+uvicorn app.main:app --app-dir . --reload --port 8000
+```
+- **POS Dashboard UI:** `http://127.0.0.1:8000`
+- **Swagger Docs:** `http://127.0.0.1:8000/docs`
 
 ---
 
-### Step 3: Running Task 02 (E-Commerce Storefront & Admin Panel)
+### Step 3: Run Task 02 (E-Commerce Storefront & Admin)
+```bash
+cd task-02
+python -m venv venv
+# On Windows:
+.\venv\Scripts\activate
+# On macOS/Linux:
+source venv/bin/activate
 
-1. Open a new terminal and navigate to `task-02`:
-   ```bash
-   cd task-02
-   ```
-2. Create and activate virtual environment:
-   ```bash
-   python -m venv venv
-   # On Windows:
-   .\venv\Scripts\activate
-   # On macOS/Linux:
-   source venv/bin/activate
-   ```
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-4. Launch Uvicorn dev server:
-   ```bash
-   uvicorn app.main:app --app-dir . --reload --port 8001
-   ```
-5. Open browser:
-   - **Storefront & Admin UI:** `http://127.0.0.1:8001`
-   - **Swagger OpenAPI Docs:** `http://127.0.0.1:8001/docs`
+pip install -r requirements.txt
+uvicorn app.main:app --app-dir . --reload --port 8001
+```
+- **Storefront & Admin UI:** `http://127.0.0.1:8001`
+- **Swagger Docs:** `http://127.0.0.1:8001/docs`
 
 ---
 
-### Step 4: Running Automated Pytest Suites
+### Step 4: Run Pytest Automation Suites
 
-Run test suites from the root repository folder:
+Run automated test suites from the root directory:
 
 ```bash
 # Run Task 01 Test Suite (Concurrency, Locking, Payments)
 python -m pytest task-01/tests -v
 
-# Run Task 02 Test Suite (Admin Panel, Checkout, Gateway, Expiration)
+# Run Task 02 Test Suite (19 Passing Tests: Admin Panel, Checkout, Gateway, Expiration)
 python -m pytest task-02/tests -v
 ```
 
@@ -226,21 +186,22 @@ python -m pytest task-02/tests -v
 
 ## 📊 Evaluator Criteria Mapping
 
-| Evaluation Criteria | Technical Implementation & Compliance | Task Location |
+| Evaluation Criteria | Technical Implementation & Compliance | Location |
 | :--- | :--- | :--- |
-| **Concurrency & Lock Handling** | Implemented `SELECT FOR UPDATE` pessimistic row locking and atomic stock deductions inside ACID transactions, guaranteeing zero overselling under parallel loads. | `task-01/app/crud.py`<br>`task-01/tests/test_concurrency.py` |
+| **Concurrency & Lock Handling** | Implemented `SELECT FOR UPDATE` pessimistic row locking and atomic stock deductions inside ACID transactions, guaranteeing 0 overselling under parallel loads. | `task-01/app/crud.py`<br>`task-01/tests/test_concurrency.py` |
 | **Stock Reservation & TTL** | 5-minute automated inventory reservation hold on checkout paired with a background async worker executing every 10 seconds to expire stale reservations and restore stock. | `task-01/app/background.py`<br>`task-02/app/background.py` |
 | **Payment Handling & Gateway** | Full mock payment simulation supporting `SUCCESS`, `FAILURE`, and `TIMEOUT` scenarios with idempotent transaction logging using `X-Idempotency-Key` headers. | `task-01/app/routers/payments.py`<br>`task-02/app/services/payment_service.py` |
 | **Order Lifecycle & Refunds** | End-to-end customer order history management, unpaid reservation cancellation, and paid order refund workflows with stock auto-restoration. | `task-02/app/services/order_service.py`<br>`task-02/static/js/app.js` |
-| **Admin & Catalog Control** | Built-in Admin Management UI to publish new products, adjust pricing, manage categories, and perform quick stock replenishment via `+ Add Qty` controls. | `task-02/templates/index.html`<br>`task-02/app/services/product_service.py` |
+| **Admin & Catalog Control** | Built-in Admin Management UI (`#admin-view`) to publish new products, adjust pricing, manage categories, and perform quick stock replenishment via `+ Add Qty` controls. | `task-02/templates/index.html`<br>`task-02/app/services/product_service.py` |
 | **Data Integrity & DB Support** | Supports both production PostgreSQL (Aiven Cloud Managed DB) and SQLite with aiosqlite, with isolated table naming (`task01_` vs `task02_`) to prevent schema collisions. | `task-01/app/database.py`<br>`task-02/app/database.py` |
-| **Code Quality & Architecture** | Modular Layered Architecture (Routers, Services, Schemas, Models), strict Pydantic v2 validation, 100% async Python FastAPI handlers, and automated pytest coverage. | Entire Codebase |
+| **Automated Testing** | 100% pass rate across concurrency stress test suite (Task 01) and 19 automated Pytest test cases (Task 02). | `task-01/tests/`<br>`task-02/tests/` |
 
 ---
 
 ## 👨‍💻 Candidate Information
 
-- **Name:** Ramesh Dilshan
-- **Repository:** [`RDilshan2000/techloom-assessment`](https://github.com/RDilshan2000/techloom-assessment)
-- **Task 01 Live Deployment:** [https://techloom-pos-task01.onrender.com/](https://techloom-pos-task01.onrender.com/)
-- **Task 02 Live Deployment:** [https://techloom-ecommerce-task02.onrender.com/](https://techloom-ecommerce-task02.onrender.com/)
+- **Name:** Ramesh Dilshan Dissanayaka
+- **Role:** Software Engineer Intern Assessment
+- **GitHub Repository:** [https://github.com/RDilshan2000/techloom-assessment](https://github.com/RDilshan2000/techloom-assessment)
+- **Task 01 Live URL (POS System):** [https://techloom-pos-task01.onrender.com/](https://techloom-pos-task01.onrender.com/)
+- **Task 02 Live URL (E-Commerce Storefront & Admin):** [https://techloom-ecommerce-task02.onrender.com/](https://techloom-ecommerce-task02.onrender.com/)
