@@ -122,20 +122,22 @@ function escapeHtml(str) {
         .replace(/'/g, '&#039;');
 }
 
-function navigateTo(viewName) {
+window.navigateTo = function(viewName) {
   const views = {
-    'storefront': document.getElementById('view-storefront'),
-    'orders': document.getElementById('view-orders'),
-    'admin': document.getElementById('view-admin'),
-    'specs': document.getElementById('view-specs')
+    'storefront': document.getElementById('view-storefront') || document.getElementById('storefront-view'),
+    'orders': document.getElementById('view-orders') || document.getElementById('order-history-view'),
+    'admin': document.getElementById('view-admin') || document.getElementById('admin-view'),
+    'specs': document.getElementById('view-specs') || document.getElementById('system-specs-view')
   };
-  
-  Object.keys(views).forEach(key => {
-    if (views[key]) {
+
+  Object.entries(views).forEach(([key, el]) => {
+    if (el) {
       if (key === viewName) {
-        views[key].classList.remove('hidden');
+        el.classList.remove('hidden');
+        el.style.display = 'block';
       } else {
-        views[key].classList.add('hidden');
+        el.classList.add('hidden');
+        el.style.display = 'none';
       }
     }
   });
@@ -153,21 +155,33 @@ function navigateTo(viewName) {
     }
   });
 
-  if (viewName === 'storefront') loadProducts();
-  if (viewName === 'orders') loadOrders();
-  if (viewName === 'admin') loadAdminProducts();
+  if (viewName === 'storefront' && typeof loadProducts === 'function') loadProducts();
+  if (viewName === 'orders' && typeof loadOrders === 'function') loadOrders();
+  if (viewName === 'admin' && typeof loadAdminProducts === 'function') loadAdminProducts();
+};
+
+function navigateTo(viewName) {
+  return window.navigateTo(viewName);
 }
+
+window.switchView = function(viewName) {
+  if (viewName === 'store' || viewName === 'storefront' || viewName === 'storefront-view') window.navigateTo('storefront');
+  else if (viewName === 'orders' || viewName === 'order-history' || viewName === 'order-history-view') window.navigateTo('orders');
+  else if (viewName === 'admin' || viewName === 'admin-view') window.navigateTo('admin');
+  else if (viewName === 'specs' || viewName === 'status' || viewName === 'system-specs' || viewName === 'system-specs-view') window.navigateTo('specs');
+  else window.navigateTo(viewName);
+};
 
 function switchView(viewName) {
-  if (viewName === 'store' || viewName === 'storefront' || viewName === 'storefront-view') navigateTo('storefront');
-  else if (viewName === 'orders' || viewName === 'order-history' || viewName === 'order-history-view') navigateTo('orders');
-  else if (viewName === 'admin' || viewName === 'admin-view') navigateTo('admin');
-  else if (viewName === 'specs' || viewName === 'status' || viewName === 'system-specs' || viewName === 'system-specs-view') navigateTo('specs');
-  else navigateTo(viewName);
+  return window.switchView(viewName);
 }
 
+window.switchTab = function(viewName) {
+  return window.switchView(viewName);
+};
+
 function switchTab(viewName) {
-  switchView(viewName);
+  return window.switchTab(viewName);
 }
 
 // ================= API CALLS =================
